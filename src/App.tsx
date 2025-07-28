@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, FC } from 'react';
 import * as d3 from 'd3';
 
 interface WorldMapProps {
@@ -8,7 +8,7 @@ interface WorldMapProps {
 	canZoom?: boolean;
 }
 
-const WorldMap: React.FC<WorldMapProps> = ({ width, height, setSelectedCountry, canZoom = false }: WorldMapProps) => {
+const WorldMap: FC<WorldMapProps> = ({ width, height, setSelectedCountry, canZoom = false }: WorldMapProps) => {
 	const svgRef = useRef<SVGSVGElement>(null);
 
 	useEffect(() => {
@@ -33,7 +33,7 @@ const WorldMap: React.FC<WorldMapProps> = ({ width, height, setSelectedCountry, 
 			(svg as any).call(zoom);
 		}
 
-		d3.json('/world.json').then((data: any) => {
+		d3.json('/small-world.json').then((data: any) => {
 			container.selectAll('path')
 				.data(data.features)
 				.enter()
