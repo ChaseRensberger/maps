@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, FC } from 'react';
+import { useEffect, useState, useRef, type FC } from 'react';
 import * as d3 from 'd3';
 
 interface WorldMapProps {
@@ -18,32 +18,53 @@ const WorldMap: FC<WorldMapProps> = ({ width, height, setSelectedCountry, canZoo
 		const container = svg.append('g');
 
 		const projection = d3.geoMercator()
-			.scale(130)
+			.scale(200)
 			.translate([width / 2, height / 2]);
 
 		const path = d3.geoPath().projection(projection);
+		const worldWidth = projection.scale() * 2 * Math.PI / projection.scale() * 200;
 
 		if (canZoom) {
 			const zoom = d3.zoom()
-				.scaleExtent([0.5, 8])
+				.scaleExtent([1, 8])
 				.on('zoom', (event: any) => {
-					container.attr('transform', event.transform);
+					const { transform } = event;
+
+
+					const maxY = height * 0.3;
+					const minY = -height * 0.3;
+					const constrainedY = Math.max(minY, Math.min(maxY, transform.y));
+
+					const wrappedX = ((transform.x % worldWidth) + worldWidth) % worldWidth;
+
+					const constrainedTransform = d3.zoomIdentity
+						.translate(wrappedX, constrainedY)
+						.scale(transform.k);
+
+					container.attr('transform', constrainedTransform.toString());
 				});
 
 			(svg as any).call(zoom);
 		}
 
 		d3.json('/small-world.json').then((data: any) => {
-			container.selectAll('path')
-				.data(data.features)
-				.enter()
-				.append('path')
-				.attr('d', (d: any) => path(d))
-				.attr('fill', '#e5e7eb')
-				.attr('stroke', '#9ca3af')
-				.attr('stroke-width', 0.5)
-				.attr('class', 'hover:fill-blue-200 transition-colors cursor-pointer')
-				.on('mouseover', (_, d: any) => setSelectedCountry(d.properties.name));
+			const copies = [-1, 0, 1, 2];
+
+			copies.forEach(copyIndex => {
+				const worldGroup = container.append('g')
+					.attr('transform', `translate(${copyIndex * worldWidth}, 0)`);
+
+				worldGroup.selectAll('path')
+					.data(data.features)
+					.enter()
+					.append('path')
+					.attr('d', (d: any) => path(d))
+					.attr('fill', '#e5e7eb')
+					.attr('stroke', '#9ca3af')
+					.attr('stroke-width', 0.5)
+					.attr('class', 'hover:fill-blue-200 transition-colors cursor-pointer')
+					.on('mouseover', (_, d: any) => setSelectedCountry(d.properties.name));
+			});
 		});
 
 	}, [width, height, canZoom]);
